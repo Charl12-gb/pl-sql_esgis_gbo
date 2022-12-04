@@ -1,0 +1,136 @@
+ACCEPT Vmatricule NUMBER PROMPT 'ENTREZ LE MATRICULE DE L''ETUDIANT : ';
+SET SERVEROUTPUT ON;
+CREATE OR REPLACE FUNCTION calculScolarite ( matriculeEtu in NUMBER) RETURN NUMBER
+is 
+payer NUMBER;
+BEGIN
+	select sum(ECHEANCIER.montant) into payer FROM ECHEANCIER WHERE ECHEANCIER.MATRICULE = matriculeEtu;
+    RETURN payer;
+END;
+/
+
+DECLARE 
+montant number;
+BEGIN 
+    montant := calculScolarite('&Vmatricule');
+	DBMS_OUTPUT.PUT_LINE('L''étudiant '|| '&Vmatricule' || ' à payer : ' || montant || ' Franc CFA.');
+END ;
+ / 
+
+
+
+
+
+
+
+SET SERVEROUTPUT ON;
+CREATE OR REPLACE FUNCTION calculScolarite ( matriculeEtu in NUMBER) RETURN NUMBER
+is 
+payer NUMBER;
+BEGIN
+	select sum(ECHEANCIER.montant) into payer FROM ECHEANCIER WHERE ECHEANCIER.MATRICULE = matriculeEtu;
+    RETURN payer;
+END;
+/
+
+DECLARE 
+CURSOR c IS SELECT
+    ETUDIANT.MATRICULE, NOM, PRENOM, LIBFIL
+FROM FILIERE INNER JOIN ETUDIANT ON filiere.codfil = ETUDIANT.CODFIL;
+BEGIN 
+    DBMS_OUTPUT.PUT_LINE('Nom                   Prenom                    Filiere                   Payer       ');
+    FOR maliste IN c LOOP
+        DBMS_OUTPUT.PUT_LINE(maliste.nom || '   ' || maliste.prenom || '    ' || maliste.libfil || '        ' || calculScolarite(maliste.matricule));
+    END LOOP;
+END ;
+ / 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SET SERVEROUTPUT ON;
+create or replace procedure ListeEtu(d in CHAR)
+is
+CURSOR c IS SELECT NOM, PRENOM FROM ETUDIANT WHERE CODFIL = d;
+begin 
+    FOR malisteEt IN c LOOP
+        DBMS_OUTPUT.PUT_LINE(malisteEt.nom || '    ' || malisteEt.prenom);
+    END LOOP;
+end;
+/
+DECLARE
+CURSOR fil IS SELECT FILIERE.CODFIL, LIBFIL FROM FILIERE;
+begin
+    FOR mF IN fil LOOP
+        DBMS_OUTPUT.PUT_LINE('FILIERE : ' || mF.LIBFIL);
+        ListeEtu(mF.codfil);
+    END LOOP;
+end;
+ /
+
+
+
+
+
+
+
+
+
+
+
+SET SERVEROUTPUT ON;
+CREATE OR REPLACE FUNCTION calculScolarite ( matriculeEtu in NUMBER) RETURN NUMBER
+is 
+payer NUMBER;
+BEGIN
+	select sum(ECHEANCIER.montant) into payer FROM ECHEANCIER WHERE ECHEANCIER.MATRICULE = matriculeEtu;
+    RETURN payer;
+END;
+/
+
+CREATE OR REPLACE FUNCTION Fil ( matriculeEtu in NUMBER) RETURN CHAR
+is 
+FilEtu CHAR;
+BEGIN
+	select ETUDIANT.CODFIL into FilEtu FROM ETUDIANT WHERE ETUDIANT.MATRICULE = matriculeEtu;
+    RETURN FilEtu;
+END;
+/
+
+CREATE OR REPLACE FUNCTION coutFil ( fil in CHAR) RETURN NUMBER
+is 
+pay NUMBER;
+BEGIN
+	select COUT into payer FROM FILIERE WHERE FILIERE.CODFIL = fil;
+    RETURN pay;
+END;
+/
+
+CREATE OR REPLACE TRIGGER ajoutEcheance
+BEFORE INSERT ON ECHEANCIER
+FOR EACH ROW
+begin 
+    IF ( Fil( coutFil(:new.MATRICULE) ) = calculScolarite( :new.MATRICULE )  ) THEN
+       DBMS_OUTPUT.PUT_LINE('SCOLARITE PAYEE' ) ;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Reste : ' || ( (Fil( coutFil(:new.MATRICULE) )) - (calculScolarite( :new.MATRICULE ) )) ) ;
+    END IF;
+end;
+/
+
+begin
+    INSERT INTO ECHEANCIER(MATRICULE, NUMECH, MONTANT, DATEECH, DATEREGL) VALUES (1, 1, 50000, '12/10/03',NULL);
+end;
+ /
+
